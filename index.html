@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Bright's Teleprompter Camera</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;background:#000;color:#fff;font-family:system-ui,-apple-system,sans-serif;overflow:hidden}
+#app{position:relative;width:100%;height:100dvh;background:#000}
+#preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#111}
+#mirror{transform:scaleX(-1)}
+#shade{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.5),transparent 25%,transparent 65%,rgba(0,0,0,.72));pointer-events:none}
+#prompt{position:absolute;left:7%;right:7%;top:25%;height:35%;overflow:hidden;text-align:center;font-weight:700;font-size:32px;line-height:1.35;text-shadow:0 2px 5px #000;pointer-events:none}
+#script{padding:30px 0 80px;white-space:pre-wrap}
+#top{position:absolute;top:0;left:0;right:0;padding:12px;display:flex;justify-content:space-between;align-items:center;z-index:5}
+.badge{background:rgba(0,0,0,.55);padding:8px 11px;border-radius:999px;font-size:13px;backdrop-filter:blur(8px)}
+#controls{position:absolute;left:0;right:0;bottom:0;padding:14px 16px 20px;z-index:6;background:linear-gradient(transparent,rgba(0,0,0,.85) 25%)}
+.row{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
+button{border:0;border-radius:14px;padding:11px 14px;background:rgba(255,255,255,.14);color:#fff;font-size:14px;font-weight:650}
+button:active{transform:scale(.97)}
+#record{width:64px;height:64px;border-radius:50%;padding:0;background:#fff;border:5px solid rgba(255,255,255,.45);background-clip:padding-box}
+#record.on{background:#e53935}
+#editor{display:none;position:absolute;inset:0;z-index:20;background:#101010;padding:18px;overflow:auto}
+#editor textarea{width:100%;height:55dvh;border-radius:14px;border:1px solid #333;background:#181818;color:#fff;padding:15px;font-size:17px;line-height:1.5;resize:none}
+#editor .row{margin-top:12px}
+input[type=range]{width:130px}
+#status{text-align:center;font-size:12px;opacity:.8;margin-top:7px}
+</style>
+</head>
+<body>
+<div id="app">
+  <video id="preview" autoplay playsinline muted></video>
+  <div id="shade"></div>
+
+  <div id="top">
+    <span class="badge" id="timer">00:00</span>
+    <span class="badge" id="state">READY</span>
+  </div>
+
+  <div id="prompt"><div id="script"></div></div>
+
+  <div id="controls">
+    <div class="row">
+      <button id="edit">Script</button>
+      <button id="flip">Flip</button>
+      <button id="sizeMinus">A−</button>
+      <button id="sizePlus">A+</button>
+      <button id="speedMinus">Speed −</button>
+      <button id="speedPlus">Speed +</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="reset">Reset</button>
+      <button id="record" aria-label="Record"></button>
+      <button id="scrollToggle">Auto-scroll</button>
+    </div>
+    <div id="status">Allow camera + microphone access to begin.</div>
+  </div>
+
+  <div id="editor">
+    <h2 style="margin-top:0">Your script</h2>
+    <textarea id="textarea" spellcheck="false"></textarea>
+    <div class="row">
+      <button id="saveScript">Use script</button>
+      <button id="closeEditor">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const video = document.getElementById('preview');
+const scriptEl = document.getElementById('script');
+const prompt = document.getElementById('prompt');
+const textarea = document.getElementById('textarea');
+const timerEl = document.getElementById('timer');
+const stateEl = document.getElementById('state');
+const statusEl = document.getElementById('status');
+const recordBtn = document.getElementById('record');
+
+let stream, recorder, chunks=[];
+let recording=false, mirrored=true, autoScroll=false;
+let fontSize=32, speed=25, rafId=null, last=0, elapsed=0, timerId=null;
+let scriptText = localStorage.getItem('tp-script') ||
+`There are four forms of scalable leverage.
+
+And most entrepreneurs only use one.
+
+The goal isn't to work harder.
+
+It's to build something where your output can grow without your hours growing at the same rate.
+
+That's what leverage does.`;
+
+function renderScript(){
+  scriptEl.textContent=scriptText;
+  textarea.value=scriptText;
+}
+renderScript();
+
+async function startCamera(){
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}},
+      audio:true
+    });
+    video.srcObject=stream;
+    statusEl.textContent="Camera ready.";
+  }catch(e){
+    statusEl.textContent="Camera permission failed. Open this page over HTTPS and allow camera + microphone.";
+    console.error(e);
+  }
+}
+function formatTime(s){
+  s=Math.floor(s); return String(Math.floor(s/60)).padStart(2,'0')+":"+String(s%60).padStart(2,'0');
+}
+function startClock(){
+  clearInterval(timerId);
+  timerId=setInterval(()=>{elapsed++;timerEl.textContent=formatTime(elapsed)},1000);
+}
+function stopClock(){clearInterval(timerId)}
+
+function startScroll(){
+  cancelAnimationFrame(rafId);
+  last=performance.now();
+  function tick(now){
+    if(!autoScroll)return;
+    const dt=(now-last)/1000; last=now;
+    prompt.scrollTop += speed*dt;
+    if(prompt.scrollTop + prompt.clientHeight >= prompt.scrollHeight-2){
+      autoScroll=false; stateEl.textContent=recording?"RECORDING":"READY"; return;
+    }
+    rafId=requestAnimationFrame(tick);
+  }
+  rafId=requestAnimationFrame(tick);
+}
+function setAuto(on){
+  autoScroll=on;
+  document.getElementById('scrollToggle').textContent=on?"Pause scroll":"Auto-scroll";
+  if(on)startScroll(); else cancelAnimationFrame(rafId);
+}
+function resetPrompt(){
+  prompt.scrollTop=0; elapsed=0; timerEl.textContent="00:00";
+}
+
+async function startRecording(){
+  if(!stream){await startCamera(); if(!stream)return;}
+  chunks=[];
+  let mime="video/webm;codecs=vp8,opus";
+  if(!MediaRecorder.isTypeSupported(mime)) mime="video/webm";
+  recorder=new MediaRecorder(stream,{mimeType:mime});
+  recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+  recorder.onstop=saveVideo;
+  recorder.start(250);
+  recording=true;
+  recordBtn.classList.add('on');
+  stateEl.textContent="RECORDING";
+  statusEl.textContent="Recording...";
+  startClock();
+  setAuto(true);
+}
+function stopRecording(){
+  if(!recorder)return;
+  recorder.stop();
+  recording=false;
+  recordBtn.classList.remove('on');
+  stateEl.textContent="SAVING";
+  stopClock(); setAuto(false);
+}
+function saveVideo(){
+  const blob=new Blob(chunks,{type:recorder.mimeType||"video/webm"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download="teleprompter-"+new Date().toISOString().replace(/[:.]/g,"-")+".webm";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+  stateEl.textContent="READY";
+  statusEl.textContent="Video saved. Check your Downloads/files.";
+}
+
+recordBtn.onclick=()=>recording?stopRecording():startRecording();
+document.getElementById('flip').onclick=()=>{
+  mirrored=!mirrored; video.id=mirrored?"mirror":"preview";
+};
+document.getElementById('sizePlus').onclick=()=>{
+  fontSize=Math.min(56,fontSize+2);scriptEl.style.fontSize=fontSize+"px";
+};
+document.getElementById('sizeMinus').onclick=()=>{
+  fontSize=Math.max(18,fontSize-2);scriptEl.style.fontSize=fontSize+"px";
+};
+document.getElementById('speedPlus').onclick=()=>{speed=Math.min(100,speed+5)};
+document.getElementById('speedMinus').onclick=()=>{speed=Math.max(5,speed-5)};
+document.getElementById('scrollToggle').onclick=()=>setAuto(!autoScroll);
+document.getElementById('reset').onclick=resetPrompt;
+
+document.getElementById('edit').onclick=()=>{
+  textarea.value=scriptText; document.getElementById('editor').style.display="block";
+};
+document.getElementById('closeEditor').onclick=()=>{
+  document.getElementById('editor').style.display="none";
+};
+document.getElementById('saveScript').onclick=()=>{
+  scriptText=textarea.value;
+  localStorage.setItem('tp-script',scriptText);
+  renderScript(); resetPrompt();
+  document.getElementById('editor').style.display="none";
+};
+
+scriptEl.style.fontSize=fontSize+"px";
+startCamera();
+</script>
+</body>
+</html>
