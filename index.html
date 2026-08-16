@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Teleprompter Camera 2.0</title>
+<title>Teleprompter Camera 2.1</title>
 
 <style>
 *{box-sizing:border-box}
@@ -47,7 +47,7 @@ html,body{
             rgba(0,0,0,.55),
             transparent 25%,
             transparent 65%,
-            rgba(0,0,0,.8)
+            rgba(0,0,0,.82)
         );
     pointer-events:none;
 }
@@ -101,7 +101,7 @@ html,body{
     z-index:6;
     background:linear-gradient(
         transparent,
-        rgba(0,0,0,.92) 28%
+        rgba(0,0,0,.94) 28%
     );
 }
 
@@ -123,10 +123,6 @@ button,select{
     font-weight:650;
 }
 
-select{
-    appearance:none;
-}
-
 button:active{
     transform:scale(.97);
 }
@@ -143,6 +139,45 @@ button:active{
 
 #record.on{
     background:#e53935;
+}
+
+#diagnostics{
+    position:absolute;
+    left:10px;
+    right:10px;
+    top:60px;
+    z-index:10;
+    display:none;
+    background:rgba(0,0,0,.78);
+    backdrop-filter:blur(12px);
+    border-radius:14px;
+    padding:14px;
+    font-family:monospace;
+    font-size:11px;
+    line-height:1.55;
+}
+
+#diagnostics.show{
+    display:block;
+}
+
+.diagTitle{
+    font-family:system-ui,sans-serif;
+    font-size:14px;
+    font-weight:700;
+    margin-bottom:7px;
+}
+
+.ok{
+    color:#62e06f;
+}
+
+.warn{
+    color:#ffd166;
+}
+
+.bad{
+    color:#ff6b6b;
 }
 
 #editor{
@@ -182,7 +217,7 @@ button:active{
 #qualityInfo{
     text-align:center;
     font-size:11px;
-    opacity:.65;
+    opacity:.7;
     margin-top:5px;
 }
 </style>
@@ -192,92 +227,179 @@ button:active{
 
 <div id="app">
 
-    <video id="preview" autoplay playsinline muted></video>
+<video
+    id="preview"
+    autoplay
+    playsinline
+    muted>
+</video>
 
-    <div id="shade"></div>
+<div id="shade"></div>
 
-    <div id="top">
-        <span class="badge" id="timer">00:00</span>
-        <span class="badge" id="state">READY</span>
+<div id="top">
+
+    <span class="badge" id="timer">
+        00:00
+    </span>
+
+    <span
+        class="badge"
+        id="state">
+        READY
+    </span>
+
+</div>
+
+
+<div id="diagnostics">
+
+    <div class="diagTitle">
+        Camera / Recorder Diagnostics
     </div>
 
-    <div id="prompt">
-        <div id="script"></div>
+    <div id="diagContent">
+        Checking...
     </div>
 
-    <div id="controls">
+</div>
 
-        <div class="row">
 
-            <button id="edit">Script</button>
+<div id="prompt">
 
-            <button id="flip">Mirror</button>
+    <div id="script"></div>
 
-            <button id="sizeMinus">A−</button>
+</div>
 
-            <button id="sizePlus">A+</button>
 
-            <button id="speedMinus">Speed −</button>
+<div id="controls">
 
-            <button id="speedPlus">Speed +</button>
+    <div class="row">
 
-        </div>
+        <button id="edit">
+            Script
+        </button>
 
-        <div class="row" style="margin-top:9px">
+        <button id="flip">
+            Mirror
+        </button>
 
-            <select id="quality">
+        <button id="sizeMinus">
+            A−
+        </button>
 
-                <option value="1080">1080p / 30fps</option>
+        <button id="sizePlus">
+            A+
+        </button>
 
-                <option value="720">720p / 30fps</option>
+        <button id="speedMinus">
+            Speed −
+        </button>
 
-                <option value="max">Maximum supported</option>
-
-            </select>
-
-            <button id="reset">Reset</button>
-
-            <button id="record" aria-label="Record"></button>
-
-            <button id="scrollToggle">Auto-scroll</button>
-
-        </div>
-
-        <div id="status">
-            Starting camera...
-        </div>
-
-        <div id="qualityInfo">
-            Detecting camera capabilities...
-        </div>
+        <button id="speedPlus">
+            Speed +
+        </button>
 
     </div>
 
 
-    <div id="editor">
+    <div class="row" style="margin-top:9px">
 
-        <h2 style="margin-top:0">
-            Your script
-        </h2>
+        <select id="quality">
 
-        <textarea
-            id="textarea"
-            spellcheck="false">
-        </textarea>
+            <option value="1080">
+                1080p / 30fps
+            </option>
 
-        <div class="row">
+            <option value="720">
+                720p / 30fps
+            </option>
 
-            <button id="saveScript">
-                Use script
-            </button>
+            <option value="max">
+                Maximum supported
+            </option>
 
-            <button id="closeEditor">
-                Cancel
-            </button>
+        </select>
 
-        </div>
+
+        <select id="codec">
+
+            <option value="auto">
+                Codec: Auto
+            </option>
+
+            <option value="h264">
+                H.264 / MP4
+            </option>
+
+            <option value="vp9">
+                VP9 / WebM
+            </option>
+
+            <option value="vp8">
+                VP8 / WebM
+            </option>
+
+        </select>
 
     </div>
+
+
+    <div class="row" style="margin-top:9px">
+
+        <button id="reset">
+            Reset
+        </button>
+
+        <button id="record">
+        </button>
+
+        <button id="scrollToggle">
+            Auto-scroll
+        </button>
+
+        <button id="diagnosticButton">
+            Info
+        </button>
+
+    </div>
+
+
+    <div id="status">
+        Starting camera...
+    </div>
+
+    <div id="qualityInfo">
+        Detecting camera...
+    </div>
+
+</div>
+
+
+<div id="editor">
+
+    <h2 style="margin-top:0">
+        Your script
+    </h2>
+
+    <textarea
+        id="textarea"
+        spellcheck="false">
+    </textarea>
+
+    <div class="row">
+
+        <button id="saveScript">
+            Use script
+        </button>
+
+        <button id="closeEditor">
+            Cancel
+        </button>
+
+    </div>
+
+</div>
+
 
 </div>
 
@@ -285,31 +407,53 @@ button:active{
 <script>
 
 /* =========================================================
-   TELEPROMPTER CAMERA 2.0
-   ========================================================= */
-
-
-const video = document.getElementById("preview");
-const scriptEl = document.getElementById("script");
-const prompt = document.getElementById("prompt");
-const textarea = document.getElementById("textarea");
-
-const timerEl = document.getElementById("timer");
-const stateEl = document.getElementById("state");
-
-const statusEl = document.getElementById("status");
-const qualityInfo = document.getElementById("qualityInfo");
-
-const recordBtn = document.getElementById("record");
-const qualitySelect = document.getElementById("quality");
-
-
-/* =========================================================
    STATE
-   ========================================================= */
+========================================================= */
+
+const video =
+document.getElementById("preview");
+
+const scriptEl =
+document.getElementById("script");
+
+const prompt =
+document.getElementById("prompt");
+
+const textarea =
+document.getElementById("textarea");
+
+const timerEl =
+document.getElementById("timer");
+
+const stateEl =
+document.getElementById("state");
+
+const statusEl =
+document.getElementById("status");
+
+const qualityInfo =
+document.getElementById("qualityInfo");
+
+const recordBtn =
+document.getElementById("record");
+
+const qualitySelect =
+document.getElementById("quality");
+
+const codecSelect =
+document.getElementById("codec");
+
+const diagContent =
+document.getElementById("diagContent");
+
+const diagnostics =
+document.getElementById("diagnostics");
+
 
 let stream = null;
+
 let recorder = null;
+
 let chunks = [];
 
 let recording = false;
@@ -333,7 +477,7 @@ let timerId = null;
 
 /* =========================================================
    SCRIPT
-   ========================================================= */
+========================================================= */
 
 let scriptText =
 localStorage.getItem("tp-script") ||
@@ -351,9 +495,11 @@ That's what leverage does.`;
 
 function renderScript(){
 
-    scriptEl.textContent = scriptText;
+    scriptEl.textContent =
+    scriptText;
 
-    textarea.value = scriptText;
+    textarea.value =
+    scriptText;
 
 }
 
@@ -361,15 +507,216 @@ renderScript();
 
 
 /* =========================================================
-   CAMERA QUALITY PRESETS
-   ========================================================= */
+   MIME / CODEC SUPPORT
+========================================================= */
+
+function codecSupport(){
+
+    const formats = {
+
+        h264:
+        "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+
+        h264Alt:
+        "video/mp4;codecs=avc1.4D401F,mp4a.40.2",
+
+        vp9:
+        "video/webm;codecs=vp9,opus",
+
+        vp8:
+        "video/webm;codecs=vp8,opus"
+
+    };
+
+
+    return {
+
+        h264:
+        MediaRecorder.isTypeSupported(
+            formats.h264
+        ) ||
+        MediaRecorder.isTypeSupported(
+            formats.h264Alt
+        ),
+
+        vp9:
+        MediaRecorder.isTypeSupported(
+            formats.vp9
+        ),
+
+        vp8:
+        MediaRecorder.isTypeSupported(
+            formats.vp8
+        )
+
+    };
+
+}
+
+
+function getPreferredMime(){
+
+    const support =
+    codecSupport();
+
+    const requested =
+    codecSelect.value;
+
+
+    /* Explicit H.264 */
+
+    if(requested === "h264"){
+
+        if(
+            MediaRecorder.isTypeSupported(
+                "video/mp4;codecs=avc1.42E01E,mp4a.40.2"
+            )
+        ){
+
+            return {
+                mime:
+                "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+
+                label:
+                "H.264 / MP4"
+            };
+
+        }
+
+
+        if(
+            MediaRecorder.isTypeSupported(
+                "video/mp4;codecs=avc1.4D401F,mp4a.40.2"
+            )
+        ){
+
+            return {
+                mime:
+                "video/mp4;codecs=avc1.4D401F,mp4a.40.2",
+
+                label:
+                "H.264 / MP4"
+            };
+
+        }
+
+
+        alert(
+            "H.264/MP4 is not supported by this browser. Falling back to VP9."
+        );
+
+    }
+
+
+    /* Explicit VP9 */
+
+    if(
+        requested === "vp9" &&
+        support.vp9
+    ){
+
+        return {
+
+            mime:
+            "video/webm;codecs=vp9,opus",
+
+            label:
+            "VP9 / WebM"
+
+        };
+
+    }
+
+
+    /* Explicit VP8 */
+
+    if(
+        requested === "vp8" &&
+        support.vp8
+    ){
+
+        return {
+
+            mime:
+            "video/webm;codecs=vp8,opus",
+
+            label:
+            "VP8 / WebM"
+
+        };
+
+    }
+
+
+    /* AUTO
+       Prefer H.264.
+    */
+
+    if(support.h264){
+
+        return {
+
+            mime:
+            "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+
+            label:
+            "H.264 / MP4"
+
+        };
+
+    }
+
+
+    if(support.vp9){
+
+        return {
+
+            mime:
+            "video/webm;codecs=vp9,opus",
+
+            label:
+            "VP9 / WebM"
+
+        };
+
+    }
+
+
+    if(support.vp8){
+
+        return {
+
+            mime:
+            "video/webm;codecs=vp8,opus",
+
+            label:
+            "VP8 / WebM"
+
+        };
+
+    }
+
+
+    return {
+
+        mime:"",
+        label:
+        "Browser default"
+
+    };
+
+}
+
+
+/* =========================================================
+   CAMERA CONSTRAINTS
+========================================================= */
 
 function getVideoConstraints(){
 
-    const quality = qualitySelect.value;
+    const quality =
+    qualitySelect.value;
 
-
-    /* 1080P */
 
     if(quality === "1080"){
 
@@ -398,8 +745,6 @@ function getVideoConstraints(){
     }
 
 
-    /* 720P */
-
     if(quality === "720"){
 
         return {
@@ -424,8 +769,6 @@ function getVideoConstraints(){
     }
 
 
-    /* MAXIMUM */
-
     return {
 
         facingMode:"user",
@@ -449,8 +792,8 @@ function getVideoConstraints(){
 
 
 /* =========================================================
-   START CAMERA
-   ========================================================= */
+   CAMERA
+========================================================= */
 
 async function startCamera(){
 
@@ -458,7 +801,9 @@ async function startCamera(){
 
         if(stream){
 
-            stream.getTracks().forEach(track=>{
+            stream
+            .getTracks()
+            .forEach(track=>{
                 track.stop();
             });
 
@@ -466,28 +811,27 @@ async function startCamera(){
 
 
         statusEl.textContent =
-        "Starting high-quality camera...";
+        "Starting camera...";
 
 
         stream =
-        await navigator.mediaDevices.getUserMedia({
+        await navigator.mediaDevices
+        .getUserMedia({
 
-            video:getVideoConstraints(),
+            video:
+            getVideoConstraints(),
 
             audio:{
-
                 echoCancellation:true,
-
                 noiseSuppression:true,
-
                 autoGainControl:true
-
             }
 
         });
 
 
-        video.srcObject = stream;
+        video.srcObject =
+        stream;
 
 
         await video.play();
@@ -496,14 +840,20 @@ async function startCamera(){
         inspectCamera();
 
 
+        updateDiagnostics();
+
+
     }
 
     catch(error){
 
         console.error(error);
 
+
         statusEl.textContent =
-        "Camera error: " + error.name;
+        "Camera error: " +
+        error.name;
+
 
         qualityInfo.textContent =
         error.message || "";
@@ -514,12 +864,13 @@ async function startCamera(){
 
 
 /* =========================================================
-   INSPECT ACTUAL CAMERA SETTINGS
-   ========================================================= */
+   CAMERA INFORMATION
+========================================================= */
 
 function inspectCamera(){
 
-    if(!stream) return;
+    if(!stream)
+        return;
 
 
     const track =
@@ -538,7 +889,9 @@ function inspectCamera(){
 
     const fps =
     settings.frameRate
-    ? Math.round(settings.frameRate)
+    ? Math.round(
+        settings.frameRate
+      )
     : "?";
 
 
@@ -553,33 +906,85 @@ function inspectCamera(){
 
 
 /* =========================================================
-   CAMERA CAPABILITIES
-   ========================================================= */
+   DIAGNOSTICS
+========================================================= */
 
-function inspectCapabilities(){
+function updateDiagnostics(){
 
-    if(!stream) return;
-
-
-    const track =
-    stream.getVideoTracks()[0];
+    const support =
+    codecSupport();
 
 
-    const capabilities =
-    track.getCapabilities();
+    const camera =
+    stream
+    ? stream.getVideoTracks()[0]
+        .getSettings()
+    : {};
 
 
-    console.log(
-        "Camera capabilities:",
-        capabilities
-    );
+    const width =
+    camera.width || "?";
+
+    const height =
+    camera.height || "?";
+
+    const fps =
+    camera.frameRate
+    ? Math.round(camera.frameRate)
+    : "?";
+
+
+    diagContent.innerHTML = `
+
+        CAMERA<br>
+
+        Resolution:
+        <span class="ok">
+        ${width} × ${height}
+        </span><br>
+
+        Frame rate:
+        <span class="ok">
+        ${fps} fps
+        </span><br><br>
+
+
+        RECORDER SUPPORT<br>
+
+        H.264 / MP4:
+        <span class="${support.h264 ? "ok":"bad"}">
+        ${support.h264 ? "SUPPORTED":"NOT SUPPORTED"}
+        </span><br>
+
+        VP9 / WebM:
+        <span class="${support.vp9 ? "ok":"bad"}">
+        ${support.vp9 ? "SUPPORTED":"NOT SUPPORTED"}
+        </span><br>
+
+        VP8 / WebM:
+        <span class="${support.vp8 ? "ok":"bad"}">
+        ${support.vp8 ? "SUPPORTED":"NOT SUPPORTED"}
+        </span><br><br>
+
+
+        SELECTED CODEC:
+        <span class="warn">
+        ${codecSelect.value.toUpperCase()}
+        </span><br>
+
+        TARGET BITRATE:
+        <span class="warn">
+        12 Mbps
+        </span>
+
+    `;
 
 }
 
 
 /* =========================================================
    TIMER
-   ========================================================= */
+========================================================= */
 
 function formatTime(seconds){
 
@@ -590,7 +995,7 @@ function formatTime(seconds){
     return (
 
         String(
-            Math.floor(seconds / 60)
+            Math.floor(seconds/60)
         ).padStart(2,"0")
 
         +
@@ -600,7 +1005,7 @@ function formatTime(seconds){
         +
 
         String(
-            seconds % 60
+            seconds%60
         ).padStart(2,"0")
 
     );
@@ -634,12 +1039,14 @@ function stopClock(){
 
 
 /* =========================================================
-   TELEPROMPTER SCROLL
-   ========================================================= */
+   SCROLL
+========================================================= */
 
 function startScroll(){
 
-    cancelAnimationFrame(rafId);
+    cancelAnimationFrame(
+        rafId
+    );
 
 
     lastFrame =
@@ -656,27 +1063,23 @@ function startScroll(){
         (now-lastFrame)/1000;
 
 
-        lastFrame = now;
+        lastFrame =
+        now;
 
 
         prompt.scrollTop +=
-        speed * delta;
+        speed*delta;
 
 
         if(
 
             prompt.scrollTop +
             prompt.clientHeight >=
-            prompt.scrollHeight - 2
+            prompt.scrollHeight-2
 
         ){
 
-            autoScroll = false;
-
-            stateEl.textContent =
-            recording
-            ? "RECORDING"
-            : "READY";
+            autoScroll=false;
 
             return;
 
@@ -684,13 +1087,17 @@ function startScroll(){
 
 
         rafId =
-        requestAnimationFrame(tick);
+        requestAnimationFrame(
+            tick
+        );
 
     }
 
 
     rafId =
-    requestAnimationFrame(tick);
+    requestAnimationFrame(
+        tick
+    );
 
 }
 
@@ -715,7 +1122,9 @@ function setAutoScroll(enabled){
 
     }else{
 
-        cancelAnimationFrame(rafId);
+        cancelAnimationFrame(
+            rafId
+        );
 
     }
 
@@ -723,60 +1132,8 @@ function setAutoScroll(enabled){
 
 
 /* =========================================================
-   RESET
-   ========================================================= */
-
-function resetPrompt(){
-
-    prompt.scrollTop = 0;
-
-    elapsed = 0;
-
-    timerEl.textContent = "00:00";
-
-}
-
-
-/* =========================================================
-   FIND BEST RECORDING MIME TYPE
-   ========================================================= */
-
-function getBestMimeType(){
-
-    const types = [
-
-        "video/webm;codecs=vp9,opus",
-
-        "video/webm;codecs=vp8,opus",
-
-        "video/webm",
-
-        "video/mp4"
-
-    ];
-
-
-    for(const type of types){
-
-        if(
-            MediaRecorder.isTypeSupported(type)
-        ){
-
-            return type;
-
-        }
-
-    }
-
-
-    return "";
-
-}
-
-
-/* =========================================================
-   RECORDING
-   ========================================================= */
+   RECORD
+========================================================= */
 
 async function startRecording(){
 
@@ -790,28 +1147,28 @@ async function startRecording(){
     }
 
 
-    chunks = [];
+    chunks=[];
 
 
-    const mimeType =
-    getBestMimeType();
+    const selected =
+    getPreferredMime();
 
 
     const options = {
 
         videoBitsPerSecond:
-        10_000_000,
+        12_000_000,
 
         audioBitsPerSecond:
-        128_000
+        160_000
 
     };
 
 
-    if(mimeType){
+    if(selected.mime){
 
         options.mimeType =
-        mimeType;
+        selected.mime;
 
     }
 
@@ -830,18 +1187,27 @@ async function startRecording(){
 
         console.error(error);
 
+
         statusEl.textContent =
-        "Recorder error. Try 720p.";
+        "Recorder failed: " +
+        error.message;
+
 
         return;
 
     }
 
 
-    recorder.ondataavailable =
-    event => {
+    console.log(
+        "Recording MIME:",
+        recorder.mimeType
+    );
 
-        if(event.data.size > 0){
+
+    recorder.ondataavailable =
+    event=>{
+
+        if(event.data.size){
 
             chunks.push(
                 event.data
@@ -859,10 +1225,12 @@ async function startRecording(){
     recorder.start(250);
 
 
-    recording = true;
+    recording=true;
 
 
-    recordBtn.classList.add("on");
+    recordBtn.classList.add(
+        "on"
+    );
 
 
     stateEl.textContent =
@@ -870,13 +1238,16 @@ async function startRecording(){
 
 
     statusEl.textContent =
-    "Recording 1080p-quality video...";
+    `Recording ${selected.label}...`;
 
 
     startClock();
 
 
     setAutoScroll(true);
+
+
+    updateDiagnostics();
 
 }
 
@@ -890,10 +1261,12 @@ function stopRecording(){
     recorder.stop();
 
 
-    recording = false;
+    recording=false;
 
 
-    recordBtn.classList.remove("on");
+    recordBtn.classList.remove(
+        "on"
+    );
 
 
     stateEl.textContent =
@@ -901,7 +1274,7 @@ function stopRecording(){
 
 
     statusEl.textContent =
-    "Encoding video...";
+    "Preparing video...";
 
 
     stopClock();
@@ -913,8 +1286,8 @@ function stopRecording(){
 
 
 /* =========================================================
-   SAVE VIDEO
-   ========================================================= */
+   SAVE
+========================================================= */
 
 function saveVideo(){
 
@@ -931,20 +1304,31 @@ function saveVideo(){
 
 
     const url =
-    URL.createObjectURL(blob);
+    URL.createObjectURL(
+        blob
+    );
 
 
-    const extension =
-    mime.includes("mp4")
-    ? "mp4"
-    : "webm";
+    let extension =
+    "webm";
+
+
+    if(
+        mime.includes("mp4")
+    ){
+
+        extension="mp4";
+
+    }
 
 
     const filename =
-    "teleprompter-1080p-" +
+    "teleprompter-" +
+    extension +
+    "-" +
     new Date()
-        .toISOString()
-        .replace(/[:.]/g,"-") +
+    .toISOString()
+    .replace(/[:.]/g,"-") +
     "." +
     extension;
 
@@ -953,22 +1337,28 @@ function saveVideo(){
     document.createElement("a");
 
 
-    link.href = url;
+    link.href=url;
 
-    link.download =
+    link.download=
     filename;
 
 
-    document.body.appendChild(link);
+    document.body.appendChild(
+        link
+    );
+
 
     link.click();
+
 
     link.remove();
 
 
     setTimeout(()=>{
 
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(
+            url
+        );
 
     },5000);
 
@@ -978,20 +1368,16 @@ function saveVideo(){
 
 
     statusEl.textContent =
-    "Video saved to Downloads.";
-
-
-    inspectCamera();
+    `Saved ${extension.toUpperCase()} video.`;
 
 }
 
 
 /* =========================================================
    BUTTONS
-   ========================================================= */
+========================================================= */
 
-
-recordBtn.onclick = () => {
+recordBtn.onclick=()=>{
 
     if(recording){
 
@@ -1006,9 +1392,11 @@ recordBtn.onclick = () => {
 };
 
 
-document.getElementById("flip").onclick = () => {
+document.getElementById(
+    "flip"
+).onclick=()=>{
 
-    mirrored = !mirrored;
+    mirrored=!mirrored;
 
     video.classList.toggle(
         "mirror",
@@ -1018,57 +1406,69 @@ document.getElementById("flip").onclick = () => {
 };
 
 
-document.getElementById("sizePlus").onclick = () => {
+document.getElementById(
+    "sizePlus"
+).onclick=()=>{
 
-    fontSize =
+    fontSize=
     Math.min(
         56,
-        fontSize + 2
+        fontSize+2
     );
 
+
     scriptEl.style.fontSize =
-    fontSize + "px";
+    fontSize+"px";
 
 };
 
 
-document.getElementById("sizeMinus").onclick = () => {
+document.getElementById(
+    "sizeMinus"
+).onclick=()=>{
 
-    fontSize =
+    fontSize=
     Math.max(
         18,
-        fontSize - 2
+        fontSize-2
     );
+
 
     scriptEl.style.fontSize =
-    fontSize + "px";
+    fontSize+"px";
 
 };
 
 
-document.getElementById("speedPlus").onclick = () => {
+document.getElementById(
+    "speedPlus"
+).onclick=()=>{
 
-    speed =
+    speed=
     Math.min(
         100,
-        speed + 5
+        speed+5
     );
 
 };
 
 
-document.getElementById("speedMinus").onclick = () => {
+document.getElementById(
+    "speedMinus"
+).onclick=()=>{
 
-    speed =
+    speed=
     Math.max(
         5,
-        speed - 5
+        speed-5
     );
 
 };
 
 
-document.getElementById("scrollToggle").onclick = () => {
+document.getElementById(
+    "scrollToggle"
+).onclick=()=>{
 
     setAutoScroll(
         !autoScroll
@@ -1077,20 +1477,30 @@ document.getElementById("scrollToggle").onclick = () => {
 };
 
 
-document.getElementById("reset").onclick =
-resetPrompt;
+document.getElementById(
+    "reset"
+).onclick=()=>{
+
+    prompt.scrollTop=0;
+
+    elapsed=0;
+
+    timerEl.textContent=
+    "00:00";
+
+};
 
 
 /* =========================================================
-   QUALITY SWITCH
-   ========================================================= */
+   QUALITY
+========================================================= */
 
-qualitySelect.onchange = async () => {
+qualitySelect.onchange=async()=>{
 
     if(recording){
 
         alert(
-            "Stop recording before changing camera quality."
+            "Stop recording before changing quality."
         );
 
         return;
@@ -1104,13 +1514,44 @@ qualitySelect.onchange = async () => {
 
 
 /* =========================================================
-   SCRIPT EDITOR
-   ========================================================= */
+   CODEC
+========================================================= */
 
-document.getElementById("edit").onclick = () => {
+codecSelect.onchange=()=>{
+
+    updateDiagnostics();
+
+};
+
+
+/* =========================================================
+   DIAGNOSTICS BUTTON
+========================================================= */
+
+document.getElementById(
+    "diagnosticButton"
+).onclick=()=>{
+
+    diagnostics.classList.toggle(
+        "show"
+    );
+
+    updateDiagnostics();
+
+};
+
+
+/* =========================================================
+   SCRIPT EDITOR
+========================================================= */
+
+document.getElementById(
+    "edit"
+).onclick=()=>{
 
     textarea.value =
     scriptText;
+
 
     document.getElementById(
         "editor"
@@ -1120,7 +1561,9 @@ document.getElementById("edit").onclick = () => {
 };
 
 
-document.getElementById("closeEditor").onclick = () => {
+document.getElementById(
+    "closeEditor"
+).onclick=()=>{
 
     document.getElementById(
         "editor"
@@ -1130,7 +1573,9 @@ document.getElementById("closeEditor").onclick = () => {
 };
 
 
-document.getElementById("saveScript").onclick = () => {
+document.getElementById(
+    "saveScript"
+).onclick=()=>{
 
     scriptText =
     textarea.value;
@@ -1145,7 +1590,7 @@ document.getElementById("saveScript").onclick = () => {
     renderScript();
 
 
-    resetPrompt();
+    prompt.scrollTop=0;
 
 
     document.getElementById(
@@ -1158,10 +1603,10 @@ document.getElementById("saveScript").onclick = () => {
 
 /* =========================================================
    INITIALIZE
-   ========================================================= */
+========================================================= */
 
 scriptEl.style.fontSize =
-fontSize + "px";
+fontSize+"px";
 
 
 startCamera();
